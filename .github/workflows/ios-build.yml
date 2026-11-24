@@ -1,0 +1,86 @@
+```yaml
+name: Quotation Editor iOS Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build-ios:
+    name: Build unsigned iOS IPA
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Find Xcode project
+        run: |
+          echo "Repository structure:"
+          ls -la
+
+          PROJECT=$(find . -name "QuotationEditoriOS.xcodeproj" -print -quit)
+
+          if [ -z "$PROJECT" ]; then
+            echo "ERROR: Xcode project not found"
+            find . \( -name "*.xcodeproj" -o -name "*.xcworkspace" \)
+            exit 1
+          fi
+
+          echo "PROJECT=$PROJECT" >> "$GITHUB_ENV"
+          echo "Found project: $PROJECT"
+
+      - name: List Xcode schemes
+        run: |
+          xcodebuild -list -project "$PROJECT"
+
+      - name: Build iOS application
+        run: |
+          xcodebuild \
+            -project "$PROJECT" \
+            -scheme QuotationEditoriOS \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: Package unsigned IPA
+        run: |
+          APP_PATH="$RUNNER_TEMP/DerivedData/Build/Products/Release-iphoneos/QuotationEditoriOS.app"
+
+          if [ ! -d "$APP_PATH" ]; then
+            echo "ERROR: Compiled iOS app not found"
+            exit 1
+          fi
+
+          mkdir -p "$RUNNER_TEMP/ipa/Payload"
+
+          ditto "$APP_PATH" \
+            "$RUNNER_TEMP/ipa/Payload/QuotationEditoriOS.app"
+
+          cd "$RUNNER_TEMP/ipa"
+
+          zip -qry "$GITHUB_WORKSPACE/QuotationEditor-unsigned.ipa" Payload
+
+          unzip -l "$GITHUB_WORKSPACE/QuotationEditor-unsigned.ipa"
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuotationEditor-unsigned-IPA
+          path: QuotationEditor-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 7
+```
