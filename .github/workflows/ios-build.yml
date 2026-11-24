@@ -1,7 +1,7 @@
 ```yaml
 name: Quotation Editor iOS Build
 
-on:
+'on':
   workflow_dispatch:
   push:
     branches:
@@ -23,6 +23,8 @@ jobs:
         run: xcodebuild -version
 
       - name: Find Xcode project
+        id: find-project
+        shell: bash
         run: |
           echo "Repository structure:"
           ls -la
@@ -62,6 +64,7 @@ jobs:
 
           if [ ! -d "$APP_PATH" ]; then
             echo "ERROR: Compiled iOS app not found"
+            find "$RUNNER_TEMP/DerivedData/Build/Products" -name "*.app"
             exit 1
           fi
 
@@ -73,8 +76,6 @@ jobs:
           cd "$RUNNER_TEMP/ipa"
 
           zip -qry "$GITHUB_WORKSPACE/QuotationEditor-unsigned.ipa" Payload
-
-          unzip -l "$GITHUB_WORKSPACE/QuotationEditor-unsigned.ipa"
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
