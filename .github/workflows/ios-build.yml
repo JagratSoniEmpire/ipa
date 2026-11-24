@@ -1,4 +1,3 @@
-```yaml
 name: Quotation Editor iOS Build
 
 'on':
@@ -30,12 +29,6 @@ jobs:
           ls -la
 
           PROJECT=$(find . -name "QuotationEditoriOS.xcodeproj" -print -quit)
-
-          if [ -z "$PROJECT" ]; then
-            echo "ERROR: Xcode project not found"
-            find . \( -name "*.xcodeproj" -o -name "*.xcworkspace" \)
-            exit 1
-          fi
 
           echo "PROJECT=$PROJECT" >> "$GITHUB_ENV"
           echo "Found project: $PROJECT"
@@ -84,4 +77,3 @@ jobs:
           path: QuotationEditor-unsigned.ipa
           if-no-files-found: error
           retention-days: 7
-```
